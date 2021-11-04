@@ -3,12 +3,13 @@
 
 class Processor {
  public:
+  Processor();
   float Utilization();  
-
+  void GetCurrentUsage();
   
  private:
- long jiffies;
- long activeJiffies;
+    long idle_;
+    long nonIdle_;
 };
 
 #endif
