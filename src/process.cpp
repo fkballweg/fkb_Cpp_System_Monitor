@@ -20,16 +20,15 @@ int Process::Pid() const {
 }
 
 float Process::CpuUtilization() { 
- //adapted from: https://stackoverflow.com/questions/1420426/how-to-calculate-the-cpu-usage-of-a-process-by-pid-in-linux-from-c
+    float pid_uti;
+    float pid_uptime = (float)LinuxParser::UpTime(Pid());
+    float uptime = (float)LinuxParser::UpTime();
+    float pid_act_jiffies = (float)LinuxParser::ActiveJiffies(Pid())/sysconf(_SC_CLK_TCK);
 
-    float pid_utime = (float)LinuxParser::UpTime(Pid());
-    float utime = (float)LinuxParser::UpTime();
-    float utime_diff = utime - pid_utime;
-    float act_jiffies = (float)LinuxParser::ActiveJiffies();
-
-    return ((act_jiffies-utime_diff)/(float)sysconf(_SC_CLK_TCK));
-     
-    }
+    pid_uti = pid_act_jiffies / (uptime - pid_uptime);
+    
+    return pid_uti;
+}
 
 string Process::Command() { 
     std::string command_ = LinuxParser::Command(Pid());
@@ -38,17 +37,16 @@ string Process::Command() {
 
 string Process::Ram() const { 
     std::string ram_ = LinuxParser::Ram(Pid());
-    return ram_; 
+    return std::to_string(std::stoi(ram_)/1024);
 }
 
 string Process::User() { 
-    std::string user_ = LinuxParser::User(Pid());
-    return user_; 
+   return LinuxParser::User(Pid());
 }
 
 long int Process::UpTime() {
-    long int utime_ = LinuxParser::UpTime(Pid());
-     return utime_;
+    return LinuxParser::UpTime(Pid());
+     
 }
 
 bool Process::operator<(Process const& a) const { 

@@ -3,6 +3,7 @@
 #include <sstream>
 #include <string>
 #include <vector>
+#include <cmath>
 
 #include "linux_parser.h"
 
@@ -77,14 +78,14 @@ float LinuxParser::MemoryUtilization() {
         if (key == "MemTotal:"){
           totalMem = std::stof(value);
         }
-        if (key == "MemFree"){
+        if (key == "MemFree:"){
           freeMem = std::stof(value);
           break;
         }
       }
     }
   }
-  return (totalMem - freeMem) / totalMem; 
+  return (totalMem - freeMem)/totalMem; 
 }
 
 long LinuxParser::UpTime() { 
@@ -103,7 +104,7 @@ long LinuxParser::Jiffies() {
   std::vector<std::string> CpuUtilization = LinuxParser::CpuUtilization();
   vector<long> values(10, 0);
   vector<CPUStates> states = {kUser_, kNice_, kSystem_, kIdle_, kIOwait_, kIRQ_, kSoftIRQ_, kSteal_};
-  for (int i : states) { // All non-guest values
+  for (int i : states) { 
     values[i] = stol(CpuUtilization[i]);
     jiffies += values[i];
   };
@@ -122,7 +123,10 @@ long LinuxParser::ActiveJiffies(int pid) {
       //std::cout << wert << std::endl;
       buffer.push_back(wert);
     }
-    time = std::stol(buffer[13] + buffer[14]); //utime + stime
+    time = std::stol(buffer[13]) + //utime
+           std::stol(buffer[14]) + //stime
+           std::stol(buffer[15]) + //cutime
+           std::stol(buffer[16]); //cstime
   }
   return time; 
 }
@@ -142,14 +146,15 @@ long LinuxParser::IdleJiffies() {
 }
 
 vector<string> LinuxParser::CpuUtilization() { 
-  std::string line, wert;
+  std::string line, key, value;
   std::vector <std::string> cpu_uti;
   std::ifstream filestream(kProcDirectory + kStatFilename);
   if (filestream.is_open()){
     std::getline(filestream, line);
     std::istringstream linestream(line);
-    while (linestream >> wert){
-        cpu_uti.push_back(wert);
+    linestream >> key;
+    while (linestream >> value){
+        cpu_uti.push_back(value);
       }
     }
   return cpu_uti; 
@@ -176,8 +181,10 @@ int LinuxParser::RunningProcesses() {
   if (filestream.is_open()){
     while (std::getline(filestream, line)){
       std::istringstream linestream(line);
-      if (key == "procs_running"){
-        return std::stoi(number);
+      while (linestream >> key >> number){
+        if (key == "procs_running"){
+          return std::stoi(number);
+        }
       }
     }
   }
@@ -201,14 +208,11 @@ string LinuxParser::Ram(int pid) {
   std::string line, key, value;
   std::ifstream filestream(kProcDirectory + std::to_string(pid) + kStatusFilename);
   if (filestream.is_open()){
-    while(std::getline(filestream, line)) {
-      std::replace(line.begin(), line.end(), ':', ' ');
+    while(std::getline(filestream, line)){
       std::istringstream linestream(line);
       while(linestream >> key >> value){
-        if (key == "VmSize") {
-          std::stringstream mem; 
-          mem << stof(value);
-          return mem.str();
+        if (key == "VmSize:") {
+            return value;    
         }
       }
     }
@@ -253,7 +257,6 @@ string LinuxParser::User(int pid) {
 long LinuxParser::UpTime(int pid) { 
   std::string line, wert; 
   std::vector<std::string> buffer;
-  long u_time = 0; 
   std::ifstream filestream(kProcDirectory + std::to_string(pid) + kStatFilename);
   if (filestream.is_open()){
     std::getline(filestream, line);
@@ -261,10 +264,6 @@ long LinuxParser::UpTime(int pid) {
     while(linestream >> wert){
       buffer.push_back(wert);
     }
-    if (buffer.size()>0){
-      u_time = std::stol(buffer[21])/ sysconf(_SC_CLK_TCK);
-      return u_time;
-    }
   }
-  return u_time; 
+  return std::stol(buffer[21])/ sysconf(_SC_CLK_TCK);
 }

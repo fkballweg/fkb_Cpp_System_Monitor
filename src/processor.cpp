@@ -1,25 +1,43 @@
+#include <unistd.h>
+
 #include "processor.h"
 #include "linux_parser.h"
 
-float jiffies_n0 = (float)LinuxParser::Jiffies();
-float act_jiffies_n0 = (float)LinuxParser::ActiveJiffies(); 
+Processor::Processor(){ GetCurrentUsage();}
 
+void Processor::GetCurrentUsage(){
+   std::vector<std::string> cpu_uti = LinuxParser::CpuUtilization();
+   idle_ = std::stof(cpu_uti[3]) + std::stof(cpu_uti[4]);
+   nonIdle_ = std::stof(cpu_uti[0]) + std::stof(cpu_uti[1]) + std::stof(cpu_uti[2]) 
+            + std::stof(cpu_uti[5]) + std::stof(cpu_uti[6]) + std::stof(cpu_uti[7]);
+   
+}
+float Processor::Utilization() {  
+   long diff_total, diff_idle;
+   long prevIdle, prevNonIdle, prevTotal, total;
+   float cpuPercantage;
+   
+   prevIdle = idle_;
+   prevNonIdle = nonIdle_;
+   
+   GetCurrentUsage();
+   
+   prevTotal = prevIdle + prevNonIdle;
+   total = idle_ + nonIdle_;
 
-float Processor::Utilization() { 
-    float jiffies_n1 = (float)LinuxParser::Jiffies();
-    float act_jiffies_n1 = (float)LinuxParser::ActiveJiffies(); 
+   diff_total = total - prevTotal;
+   diff_idle = idle_ - prevIdle;
+   
+   if ((float)diff_total > 0){
+      cpuPercantage = ((float)diff_total - (float)diff_idle ) / (float)diff_total;
+   }
+   else{
+      cpuPercantage = 0.0f;
+   }
 
-    float diff_j = jiffies_n1 - jiffies_n0;
-    float diff_act_j = act_jiffies_n1 - act_jiffies_n0;
-
-    jiffies_n0 = jiffies_n1; 
-    act_jiffies_n0 = act_jiffies_n1;
-
-    if (diff_j != 0){
-        return (diff_act_j/diff_j);
-    }
-    else {
-        return 0.0f; 
-    }
-
+   return cpuPercantage;
+   
+   
+   
+   
 }
