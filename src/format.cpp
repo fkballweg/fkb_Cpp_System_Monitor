@@ -11,6 +11,7 @@ string Format::ElapsedTime(long seconds) {
     std::string HH = std::to_string(hour);
     std::string MM = std::to_string(minutes%60);
     std::string SS = std::to_string(seconds%60);
+    SS.insert(0, 2 - SS.length(), '0');
 
     return HH + ":" + MM + ":" + SS; 
 }

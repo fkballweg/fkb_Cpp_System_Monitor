@@ -89,14 +89,14 @@ float LinuxParser::MemoryUtilization() {
 }
 
 long LinuxParser::UpTime() { 
-  std::string line, up_time;
+  std::string line, upTime;
   std::ifstream filestream(kProcDirectory + kUptimeFilename);
   if (filestream.is_open()){
     std::getline(filestream, line);
     std::istringstream linestream(line);
-    linestream >> up_time;
+    linestream >> upTime;
   }
-  return std::stol(up_time); 
+  return std::stol(upTime); 
 }
 
 long LinuxParser::Jiffies() { 
@@ -121,7 +121,7 @@ long LinuxParser::ActiveJiffies(int pid) {
     std::istringstream linestream(line);
     while (linestream >> wert) {
       //std::cout << wert << std::endl;
-      buffer.push_back(wert);
+      buffer.emplace_back(wert);
     }
     time = std::stol(buffer[13]) + //utime
            std::stol(buffer[14]) + //stime
@@ -147,17 +147,17 @@ long LinuxParser::IdleJiffies() {
 
 vector<string> LinuxParser::CpuUtilization() { 
   std::string line, key, value;
-  std::vector <std::string> cpu_uti;
+  std::vector <std::string> cpuUti;
   std::ifstream filestream(kProcDirectory + kStatFilename);
   if (filestream.is_open()){
     std::getline(filestream, line);
     std::istringstream linestream(line);
     linestream >> key;
     while (linestream >> value){
-        cpu_uti.push_back(value);
+        cpuUti.emplace_back(value);
       }
     }
-  return cpu_uti; 
+  return cpuUti; 
 }
 
 int LinuxParser::TotalProcesses() {
@@ -262,8 +262,8 @@ long LinuxParser::UpTime(int pid) {
     std::getline(filestream, line);
     std::istringstream linestream(line);
     while(linestream >> wert){
-      buffer.push_back(wert);
+      buffer.emplace_back(wert);
     }
   }
-  return std::stol(buffer[21])/ sysconf(_SC_CLK_TCK);
+  return UpTime() - std::stol(buffer[21])/ sysconf(_SC_CLK_TCK);
 }
