@@ -21,7 +21,8 @@ Processor& System::Cpu() {
 vector<Process>& System::Processes() { 
     std::vector<int> pids = LinuxParser::Pids();
     for (auto pid : pids){
-        processes_.push_back(Process(pid));
+        if (std::stoi(LinuxParser::Ram(pid)) > 0)
+            processes_.emplace_back(Process(pid));
     }
     return processes_; 
 }
